@@ -25,6 +25,9 @@ SHOULD include dedicated exception logging.
 """
 
 import functools
+import gettext
+
+_ = gettext.gettext
 
 from oslo.config import cfg
 

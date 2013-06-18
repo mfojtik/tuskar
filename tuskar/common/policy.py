@@ -17,6 +17,10 @@
 
 """Policy Engine For Tuskar."""
 
+import gettext
+
+_ = gettext.gettext
+
 import os.path
 
 from oslo.config import cfg
