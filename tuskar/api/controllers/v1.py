@@ -22,6 +22,7 @@ Version 1 of the Tuskar API
 from oslo.config import cfg
 import pecan
 from pecan import rest
+from pecan import expose, abort
 import wsme
 from wsme import types as wtypes
 import wsmeext.pecan as wsme_pecan
@@ -68,7 +69,12 @@ class Base(wsme.types.Base):
         return dict((k, getattr(self, k))
                 for k in self.fields
                 if hasattr(self, k) and
-                getattr(self, k) != wsme.Unset)
+                getattr(self, k) != wsme.Unset and
+                getattr(self, k) is not None
+                )
+
+    def __json__(self):
+        return self.as_dict()
 
     def get_id(self):
         """Returns the ID of this resource as specified in the self link."""
@@ -245,23 +251,23 @@ class RacksController(rest.RestController):
             result.append(Rack.convert_with_links(rack, links))
         return result
 
-    @wsme_pecan.wsexpose(Rack, unicode)
+    @expose('json')
     def get_one(self, rack_id):
         """Retrieve information about the given Rack."""
         rack = pecan.request.dbapi.get_rack(rack_id)
+        if not rack:
+            abort(404)
         links = [_make_link('self', pecan.request.host_url, 'racks',
-                rack.id)]
+            rack.id)]
         return Rack.convert_with_links(rack, links)
 
-    @wsme_pecan.wsexpose(None, wtypes.text, status_code=204)
+    @expose('json')
     def delete(self, rack_id):
         """Remove the Rack."""
-
-        # FIXME(mfojtik: For some reason, Pecan does not return 201 here
-        #                as configured above
-        #
-        pecan.response.status_code = 204
-        pecan.request.dbapi.delete_rack(rack_id)
+        if not pecan.request.dbapi.delete_rack(rack_id):
+            abort(404)
+        else:
+            abort(204)
 
 
 class ResourceClassesController(rest.RestController):
@@ -293,8 +299,10 @@ class ResourceClassesController(rest.RestController):
                          status_code=200)
     def put(self, resource_class_id, resource_class):
         try:
-            result = pecan.request.dbapi.update_resource_class(resource_class_id,
-                                                               resource_class)
+            result = pecan.request.dbapi.update_resource_class(
+                    resource_class_id,
+                    resource_class
+                    )
         except Exception as e:
             LOG.exception(e)
             raise wsme.exc.ClientSideError(_("Invalid data"))

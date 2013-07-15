@@ -78,7 +78,7 @@ class Connection(api.Connection):
                     subqueryload('nodes')
                     ).filter_by(id=rack_id).one()
         except NoResultFound:
-            raise exception.RackNotFound(rack=rack_id)
+            result = None
 
         return result
 
@@ -249,6 +249,8 @@ class Connection(api.Connection):
     def delete_rack(self, rack_id):
         session = get_session()
         rack = self.get_rack(rack_id)
+        if not rack:
+            return False
         session.begin()
         try:
             session.delete(rack)
@@ -268,6 +270,7 @@ class Connection(api.Connection):
             session.query(models.ResourceClass
                           ).filter_by(id=resource_class_id).delete()
             session.commit()
+            return True
         except Exception:
             session.rollback()
             raise
