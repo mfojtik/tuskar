@@ -154,7 +154,7 @@ class Connection(api.Connection):
             session.add(rc)
 
             if not isinstance(new_resource_class.racks, wtypes.UnsetType):
-                rc.racks = []
+                [session.delete(r) for r in rs.racks]
                 for r in new_resource_class.racks:
                     rack = self.get_rack(r.get_id())
                     session.add(rack)
