@@ -77,5 +77,20 @@
       KeyName:
         Ref: KeyName
       AvailabilityZone: nova::${x}
+      UserData:
+        Fn::Base64:
+          >
+            #!/bin/bash -v
+            /opt/aws/bin/cfn-init
+            # Setup the keystone:
+            export OS_USERNAME=${FIXME}
+            export OS_PASSWORD=${FIXME}
+            export OS_TENANT_NAME=${FIXME}
+            export OS_AUTH_URL=${FIXME}
+            # Now we can all nova commands:
+            ${for flavors in rs....}
+            nova-manage instance_type create ${FIXME} 32768 16 320
+            ${end}
+
     Type: AWS::EC2::Instance
 </%def>\
