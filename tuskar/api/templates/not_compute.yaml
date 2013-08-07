@@ -105,7 +105,7 @@
           /opt/aws/bin/cfn-init
           # We need to set the undercloud Heat IP in the boto config.  Atm this
           # is hardcoded.  We should set a hostname in the tuskar conf.
-          sed -e "s/0.0.0.0/192.0.2.2/g" /var/lib/heat-cfntools/cfn-boto-cfg > /tmp/cfn-boto-cfg
+          sed -e "s/0.0.0.0/${config.undercloud_heat_ip}/g" /var/lib/heat-cfntools/cfn-boto-cfg > /tmp/cfn-boto-cfg
           mv -f /tmp/cfn-boto-cfg /var/lib/heat-cfntools/cfn-boto-cfg
           exec /root/tuskar/provision.sh &> /root/tuskar/provision.log &
     Type: AWS::EC2::Instance

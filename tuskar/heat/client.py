@@ -38,7 +38,7 @@ heat_opts = [
     cfg.StrOpt('endpoint_type',
                default='publicURL',
                help='Heat API service endpoint type in keystone'
-               )
+               ),
 ]
 
 heat_keystone_opts = [

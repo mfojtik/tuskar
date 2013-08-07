@@ -36,13 +36,17 @@ from tuskar.compute.nova import NovaClient
 LOG = log.getLogger(__name__)
 CONF = cfg.CONF
 
-ironic_opts = [
+controller_opts = [
     cfg.StrOpt('ironic_url',
                default='http://ironic.local:6543/v1',
                help='Ironic API entrypoint URL'),
+    cfg.StrOpt('undercloud_heat_ip',
+               default='192.168.1.2',
+               help='Undercloud Heat server IP address'
+               )
 ]
 
-CONF.register_opts(ironic_opts)
+CONF.register_opts(controller_opts)
 
 
 def _make_link(rel_name, url, type, type_arg):
@@ -151,7 +155,8 @@ class Rack(Base):
     @classmethod
     def convert_with_links(self, rack, links):
 
-        kwargs = rack.as_dict() # returns a new dict, overwriting keys is safe
+        # Returns a new dict, overwriting keys is safe
+        kwargs = rack.as_dict()
 
         if rack.chassis_id:
             kwargs['chassis'] = Chassis(id=rack.chassis_id,
@@ -354,16 +359,18 @@ class FlavorsController(rest.RestController):
         """Create a new Flavor for a ResourceClass."""
         try:
             flavor = pecan.request.dbapi.create_resource_class_flavor(
-                                            resource_class_id,flavor)
-            #nova_flavor_uuid =  self.nova.create_flavor(flavor,
-                #pecan.request.dbapi.get_resource_class(resource_class_id).name)
-            #pecan.request.dbapi.update_flavor_nova_uuid(flavor.id, nova_flavor_uuid)
+                                            resource_class_id, flavor)
+            """
+            nova_flavor_uuid =  self.nova.create_flavor(flavor,
+                pecan.request.dbapi.get_resource_class(resource_class_id).name)
+            pecan.request.dbapi.update_flavor_nova_uuid(flavor.id,
+                nova_flavor_uuid)
+            """
         except Exception as e:
             LOG.exception(e)
             raise wsme.exc.ClientSideError(_("Invalid data"))
         pecan.response.status_code = 201
         return Flavor.add_capacities(resource_class_id, flavor)
-
 
     #Do we need this, i.e. GET /api/resource_classes/1/flavors
     #i.e. return just the flavors for a given resource_class?
@@ -415,10 +422,15 @@ class ResourceClassesController(rest.RestController):
         """Create a new Resource Class."""
         try:
             result = pecan.request.dbapi.create_resource_class(resource_class)
-            #create in nova any flavors included in this resource_class creation
-            #for flav in result.flavors:
-                #nova_flavor_uuid = self.flavors.nova.create_flavor(flav, result.name)
-                #pecan.request.dbapi.update_flavor_nova_uuid(flav.id, nova_flavor_uuid)
+            """
+            # Create in nova any flavors included in this resource_class
+            # creation
+            for flav in result.flavors:
+                nova_flavor_uuid = self.flavors.nova.create_flavor(flav,
+                    result.name)
+                pecan.request.dbapi.update_flavor_nova_uuid(flav.id,
+                    nova_flavor_uuid)
+            """
         except Exception as e:
             LOG.exception(e)
             raise wsme.exc.ClientSideError(_("Invalid data"))
@@ -495,7 +507,7 @@ class DataCenterController(rest.RestController):
         rcs = pecan.request.dbapi.get_heat_data()
         nova_utils = NovaClient()
         return render('overcloud.yaml', dict(resource_classes=rcs,
-           nova_util=nova_utils))
+           nova_util=nova_utils, config=CONF))
 
     @pecan.expose('json')
     def post(self):
@@ -507,7 +519,7 @@ class DataCenterController(rest.RestController):
         nova_utils = NovaClient()
 
         template_body = render('overcloud.yaml', dict(resource_classes=rcs,
-            nova_util=nova_utils))
+            nova_util=nova_utils, config=CONF))
         if heat.validate_template(template_body):
 
             if heat.exists_stack():
