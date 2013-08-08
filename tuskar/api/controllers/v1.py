@@ -191,7 +191,7 @@ class Rack(Base):
 
 class Flavor(Base):
     """A representation of Flavor in HTTP body."""
-    #FIXME - I want id to be UUID - String
+    # FIXME - I want id to be UUID - String
     id = wsme.wsattr(int, mandatory=True)
     name = wsme.wsattr(wtypes.text, mandatory=False)
     max_vms = wsme.wsattr(int, mandatory=False)
@@ -350,9 +350,6 @@ class RacksController(rest.RestController):
 class FlavorsController(rest.RestController):
     """REST controller for Flavor."""
 
-    #nova=NovaClient()
-
-    #POST /api/resource_classes/1/flavors
     @wsme.validate(Flavor)
     @wsme_pecan.wsexpose(Flavor, wtypes.text, body=Flavor, status_code=201)
     def post(self, resource_class_id, flavor):
@@ -360,12 +357,6 @@ class FlavorsController(rest.RestController):
         try:
             flavor = pecan.request.dbapi.create_resource_class_flavor(
                                             resource_class_id, flavor)
-            """
-            nova_flavor_uuid =  self.nova.create_flavor(flavor,
-                pecan.request.dbapi.get_resource_class(resource_class_id).name)
-            pecan.request.dbapi.update_flavor_nova_uuid(flavor.id,
-                nova_flavor_uuid)
-            """
         except Exception as e:
             LOG.exception(e)
             raise wsme.exc.ClientSideError(_("Invalid data"))
@@ -380,9 +371,7 @@ class FlavorsController(rest.RestController):
         flavors = []
         for flavor in pecan.request.dbapi.get_flavors(resource_class_id):
             flavors.append(Flavor.add_capacities(resource_class_id, flavor))
-
         return flavors
-        #return [Flavor.from_db_model(flavor) for flavor in result]
 
     @wsme_pecan.wsexpose(Flavor, wtypes.text, wtypes.text)
     def get_one(self, resource_id, flavor_id):
@@ -405,10 +394,7 @@ class FlavorsController(rest.RestController):
     @wsme_pecan.wsexpose(None, wtypes.text, wtypes.text, status_code=204)
     def delete(self, resource_class_id, flavor_id):
         """Delete a Flavor."""
-        #pecan.response.status_code = 204
-        #nova_flavor_uuid = pecan.request.dbapi.delete_flavor(flavor_id)
         pecan.request.dbapi.delete_flavor(flavor_id)
-        #self.nova.delete_flavor(nova_flavor_uuid)
 
 
 class ResourceClassesController(rest.RestController):
@@ -484,10 +470,6 @@ class ResourceClassesController(rest.RestController):
         #
         # TODO(mfojtik): Update the HEAT template at this point
         #
-        #DELETE any resource class flavors from nova too
-        #for flav in pecan.request.dbapi.get_flavors(resource_class_id):
-        #    nova_flavor_uuid = pecan.request.dbapi.delete_flavor(flav.id)
-        #    self.flavors.nova.delete_flavor(nova_flavor_uuid)
         pecan.request.dbapi.delete_resource_class(resource_class_id)
 
 
